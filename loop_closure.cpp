@@ -220,17 +220,17 @@ int main( int argc, char** argv )
 		correctKeypoints_2.push_back(trainkeypoints[ret[0].Id][idx]);
 	}
 	//看下矫正的match里能不能去掉一部分
+	
 	std::vector< DMatch > good_matches;
 	for ( int j = 0; j < correctMatches.size(); j++ )
 	{
 	    
 	    if ( correctMatches[j].distance <= 300.0)
 	    {
-		good_matches.push_back ( matches[j] );
+		good_matches.push_back ( correctMatches[j] );
 		printf("the %d th distance is %.3f \n",j,correctMatches[j].distance);
 	    }
 	}	
-	
 	
 	
 	
