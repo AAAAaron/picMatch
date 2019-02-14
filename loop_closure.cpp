@@ -71,7 +71,7 @@ int main( int argc, char** argv )
     vector<Mat> images; 
     RNG rng((unsigned)time(NULL));
     string testdir="/home/aaron/slambook/slambook-master/picmatch/google/";
-    for ( int i=0; i<61; i++ )
+    for ( int i=0; i<60; i++ )
     {
         string path = testdir+to_string(i)+".jpg";
 // 	imshow("dsd",imread(path));
@@ -166,13 +166,14 @@ int main( int argc, char** argv )
     for ( int i=0; i<descriptors.size(); i++ )
     {
 //         string path = testdir+to_string(i)+".jpg";
-      	vector<Mat> imgt;
+//       	vector<Mat> imgt;
 	Mat dst;
-	imgt.push_back(images[i]);  
+// 	imgt.push_back(images[i]);  
 // 	imshow("",imread(path));
+
         DBoW3::QueryResults ret;
         db.query( descriptors[i], ret, 3);      // max result=4
-        cout<<"searching for image "<<i<<" returns "<<ret<<endl<<endl;
+//         cout<<"searching for image "<<i<<" returns "<<ret<<endl<<endl;
 	for(DBoW3::Result res:ret)
 	{
 // 	  if(res.Score<0.035)
@@ -186,12 +187,12 @@ int main( int argc, char** argv )
 // 	  string path2 =traindir+to_string(res.Id)+".jpg";
 // 	 cv::imshow("score="+to_string(res.Score), imread(path2) );  
 // 	  cv::imshow("score=", imread(path2) );  
-	  imgt.push_back(trainimages[res.Id]);
+// 	  imgt.push_back(trainimages[res.Id]);
 	 //考虑根据批评特性筛选是否成功 
 	
-	}
+	
 //  cout<<"sdsdsds"<<i<<"sdsd"<<ret[0].Id<<endl;  
-	matcher->match(descriptors[i],trainDescriptors[ret[0].Id],matches);
+	matcher->match(descriptors[i],trainDescriptors[res.Id],matches);
 
 
 	//-- Step 4: Remove mismatches by vector field consensus (VFC)
@@ -279,7 +280,7 @@ int main( int argc, char** argv )
 	  pt = keypoints[i][matches[jk].queryIdx].pt;
 	  p1.at<float>(jk, 0) = pt.x;
 	  p1.at<float>(jk, 1) = pt.y;
-	  pt = trainkeypoints[ret[0].Id][matches[jk].trainIdx].pt;
+	  pt = trainkeypoints[res.Id][matches[jk].trainIdx].pt;
 	  p2.at<float>(jk, 0) = pt.x;
 	  p2.at<float>(jk, 1) = pt.y;
       }
@@ -364,15 +365,16 @@ int main( int argc, char** argv )
 // 	    cout<<j<<"jjj"<<endl;
 // 	  }
 // 	}
+      
 	//-- Draw mismatch removal result
 	Mat img_correctMatches;
 	
-	drawMatches(images[i], key1, trainimages[ret[0].Id], key2, good_matches, img_correctMatches);  
+	drawMatches(images[i], key1, trainimages[res.Id], key2, good_matches, img_correctMatches);  
 // 	drawMatches(images[i], keypoints[i], trainimages[ret[0].Id], trainkeypoints[ret[0].Id] ,good_matches, img_correctMatches);
 	
-	resize(img_correctMatches,img_correctMatches,Size(1600,800));
+	resize(img_correctMatches,img_correctMatches,Size(1000,600));
 	//-- Show mismatch removal result
-	imshow("Detected Correct Matches", img_correctMatches);
+	imshow("Score="+to_string(res.Score)+"InlinerCount="+to_string(InlinerCount)+"id="+to_string(res.Id), img_correctMatches);
 // 	waitKey(0);
 	
 // 	Mat img_goodmatch;
@@ -383,7 +385,7 @@ int main( int argc, char** argv )
 
 // 	mergeImage(dst, imgt);
 // 	imshow("dst", dst);
-	
+	}
 	cv::waitKey(0);
 	cv::destroyAllWindows();
     }
