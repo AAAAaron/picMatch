@@ -10,9 +10,15 @@
 #include <opencv2/imgproc.hpp>
 #include <time.h>
 #include "vfc.h"
+
+#include <fstream> 
 using namespace cv;
 using namespace std;
 using namespace cv::xfeatures2d;
+double sigmoidFun(double x,double sigma,double miu)
+{
+  return 1.0/(1.0+exp(-(x-miu)*sigma));
+}
 void mergeImage(Mat &dst, vector<Mat> &images)
 {
 	int imgCount = (int)images.size();
@@ -121,6 +127,7 @@ int main( int argc, char** argv )
     vector<vector<KeyPoint>> trainkeypoints;
     
     img_index=0;
+    ofstream out("out.txt"); 
     for ( Mat& image:trainimages )
     {
         vector<KeyPoint> tmpkeypoints;
@@ -163,6 +170,7 @@ int main( int argc, char** argv )
     for ( int i=0; i<trainDescriptors.size(); i++ )
         db.add(trainDescriptors[i]);
     cout<<"database info: "<<db<<endl;
+//     out<<"--------------"<<endl;
     for ( int i=0; i<descriptors.size(); i++ )
     {
 //         string path = testdir+to_string(i)+".jpg";
@@ -174,24 +182,22 @@ int main( int argc, char** argv )
         DBoW3::QueryResults ret;
         db.query( descriptors[i], ret, 3);      // max result=4
 //         cout<<"searching for image "<<i<<" returns "<<ret<<endl<<endl;
+	if(ret[0].Score<0.035)
+	{
+	  out<<i<<","<<0<<","<<0<<","<<0<<","<<0<<","<<"该张照片得分过低,库中没有有效的照片"<<endl;
+	  continue;
+	}
+	double firstScore=0;
+	double firstInlineCount=1e-2;
+	double firstConsistency=1e-2;
+	double resCount=-1;
+	
 	for(DBoW3::Result res:ret)
 	{
-// 	  if(res.Score<0.035)
-// 	  {
-// 	    cout<<"this pic close to "<<res.Id<<"but score is low"<<endl;
-// 	  }
-// 	  else
-// 	  {
-// 	    cout<<"this pic close to "<<res.Id<<" score is "<<res.Score<<endl;
-// 	  }
-// 	  string path2 =traindir+to_string(res.Id)+".jpg";
-// 	 cv::imshow("score="+to_string(res.Score), imread(path2) );  
-// 	  cv::imshow("score=", imread(path2) );  
-// 	  imgt.push_back(trainimages[res.Id]);
-	 //考虑根据批评特性筛选是否成功 
+	  resCount+=1;
+
 	
-	
-//  cout<<"sdsdsds"<<i<<"sdsd"<<ret[0].Id<<endl;  
+
 	matcher->match(descriptors[i],trainDescriptors[res.Id],matches);
 
 
@@ -250,20 +256,10 @@ int main( int argc, char** argv )
 //         if ( dist > max_dist ) max_dist = dist;
 //     }
 //     
-//     // 仅供娱乐的写法
-//     min_dist = min_element( matches.begin(), matches.end(), [](const DMatch& m1, const DMatch& m2) {return m1.distance<m2.distance;} )->distance;
-//     max_dist = max_element( matches.begin(), matches.end(), [](const DMatch& m1, const DMatch& m2) {return m1.distance<m2.distance;} )->distance;
 
     //当描述子之间的距离大于两倍的最小距离时,即认为匹配有误.但有时候最小距离会非常小,设置一个经验值30作为下限.
     std::vector< DMatch > good_matches;
-//     for ( int i = 0; i < matches.size(); i++ )
-//     {
-//         if ( matches[i].distance <= max ( 2*min_dist, 30.0 ) )
-//         {
-//             good_matches.push_back ( matches[i] );
-//         }
-//     }
-//  cout<<"sdsdsds"<<endl;   
+
     
 //  使用findfundermantael 去除野点
       // 分配空间
@@ -318,6 +314,9 @@ int main( int argc, char** argv )
       m_LeftInlier.resize(InlinerCount);
       m_RightInlier.resize(InlinerCount);
       InlinerCount = 0;
+      Point2d consistency_mean(0,0);
+
+      vector <Point2d> consistency_vector;
       for (int jk=0; jk<ptCount; jk++)
       {
 	  if (m_RANSACStatus[jk] != 0)
@@ -328,9 +327,61 @@ int main( int argc, char** argv )
 		m_RightInlier[InlinerCount].y = p2.at<float>(jk, 1);
 		good_matches[InlinerCount].queryIdx = InlinerCount;
 		good_matches[InlinerCount].trainIdx = InlinerCount;
+		double dx=m_RightInlier[InlinerCount].x-m_LeftInlier[InlinerCount].x;
+		double dy=m_RightInlier[InlinerCount].y-m_LeftInlier[InlinerCount].y;
+		double dxy=sqrt(dx*dx+dy*dy);
+		if(dxy!=0)
+		{
+		dx/=dxy;
+		dy/=dxy;
+		}
+		consistency_vector.push_back(Point2d(dx,dy));
+		consistency_mean.x+=dx;
+		consistency_mean.y+=dy;
+		out<<i<<","<<res.Id<<","<<dx<<","<<dy<<endl;
 		InlinerCount++;
+	    
 	  }
       }
+      if(InlinerCount<25)
+      {
+	out<<i<<","<<0<<","<<0<<","<<0<<","<<0<<","<<"内点数量小于25,此时 匹配照片不成功"<<res.Id<<endl;
+	continue;
+      }
+      
+      
+      
+      double consistency_ratio=0;
+      if (InlinerCount>2)
+      {
+	consistency_mean.x/=InlinerCount;
+	consistency_mean.y/=InlinerCount;
+	double consistency_norm=sqrt(consistency_mean.x*consistency_mean.x+consistency_mean.y*consistency_mean.y);
+	consistency_mean.x/=consistency_norm;
+	consistency_mean.y/=consistency_norm;
+	double consistency_min=2;
+	double consistency_max=-2;
+	double consistency_sum=0;
+	for(Point2d tmpPoint:consistency_vector)
+	{
+	  double cosValue=tmpPoint.x*consistency_mean.x+tmpPoint.y*consistency_mean.y;
+	  cosValue=abs(cosValue);
+	  if(cosValue>consistency_max)
+	  {
+	    consistency_max=cosValue;
+	  }
+	  if(cosValue<consistency_min)
+	  {
+	    consistency_min=cosValue;
+	  }
+	  consistency_sum+=cosValue;
+	}
+	consistency_ratio=consistency_sum-consistency_min-consistency_min;
+	consistency_ratio=consistency_ratio*1.0f/(InlinerCount-2);
+	
+      
+      }
+      
       // 把内点转换为drawMatches可以使用的格式
 
       vector<KeyPoint> key1(InlinerCount);
@@ -365,18 +416,32 @@ int main( int argc, char** argv )
 // 	    cout<<j<<"jjj"<<endl;
 // 	  }
 // 	}
+       if(resCount==0)
+       {
+	 firstScore=res.Score;
+	 firstInlineCount=InlinerCount;
+	 firstConsistency=consistency_ratio;
+       }
+       if(resCount==0 || (res.Score/firstScore>0.8&&((InlinerCount/firstInlineCount>1.8&&consistency_ratio>0.5)||(InlinerCount/firstInlineCount>1.3&&consistency_ratio/firstConsistency>1))))
+       {
       
 	//-- Draw mismatch removal result
-	Mat img_correctMatches;
+ 	Mat img_correctMatches;
 	
-	drawMatches(images[i], key1, trainimages[res.Id], key2, good_matches, img_correctMatches);  
+ 	drawMatches(images[i], key1, trainimages[res.Id], key2, good_matches, img_correctMatches);  
 // 	drawMatches(images[i], keypoints[i], trainimages[ret[0].Id], trainkeypoints[ret[0].Id] ,good_matches, img_correctMatches);
 	
 	resize(img_correctMatches,img_correctMatches,Size(1000,600));
 	//-- Show mismatch removal result
-	imshow("Score="+to_string(res.Score)+"InlinerCount="+to_string(InlinerCount)+"id="+to_string(res.Id), img_correctMatches);
+	double lastResult=0;
+	double pro1=sigmoidFun(res.Score,100,0.05);
+	double pro2=sigmoidFun(InlinerCount,0.15,40);
+	double pro3=sigmoidFun(consistency_ratio,20,0.7);
+	lastResult=(pro1+pro2+pro3)/3.0f;
+	imshow("Score="+to_string(res.Score)+"/"+to_string(pro1)+"InlinerCount="+to_string(InlinerCount)+"/"+to_string(pro2)+"consistency="+to_string(consistency_ratio)+"/"+to_string(pro3)+"pro"+to_string(lastResult), img_correctMatches);
 // 	waitKey(0);
-	
+	}
+	out<<i<<","<<res.Id<<","<<res.Score<<","<<InlinerCount<<","<<consistency_ratio<<endl;
 // 	Mat img_goodmatch;
 // 	drawMatches ( images[i], keypoints[i], trainimages[ret[0].Id], trainkeypoints[ret[0].Id], good_matches, img_goodmatch ,Scalar::all(-1),Scalar::all(-1));
 // 
@@ -385,9 +450,11 @@ int main( int argc, char** argv )
 
 // 	mergeImage(dst, imgt);
 // 	imshow("dst", dst);
+       
 	}
-	cv::waitKey(0);
-	cv::destroyAllWindows();
+ 	cv::waitKey(0);
+ 	cv::destroyAllWindows();
     }
+    out.close();
     cout<<"done."<<endl;
 }
