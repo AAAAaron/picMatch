@@ -335,6 +335,11 @@ int main( int argc, char** argv )
 		dx/=dxy;
 		dy/=dxy;
 		}
+		if(dx<0)
+		{
+		  dx*=-1;
+		  dy*=-1;
+		}
 		consistency_vector.push_back(Point2d(dx,dy));
 		consistency_mean.x+=dx;
 		consistency_mean.y+=dy;
