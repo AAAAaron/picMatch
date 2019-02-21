@@ -10,7 +10,6 @@
 #include <opencv2/imgproc.hpp>
 #include <time.h>
 #include "vfc.h"
-
 #include <fstream> 
 using namespace cv;
 using namespace std;
@@ -66,7 +65,7 @@ int main( int argc, char** argv )
     // read the images and database  
     cout<<"reading database"<<endl;
 //     DBoW3::Vocabulary vocab("./vocabulary.yml.gz");
-    DBoW3::Vocabulary vocab("./vocabularyOrb.yml.gz");//指定自己的图片字典
+    DBoW3::Vocabulary vocab("./vocabularyRetail.yml.gz");//指定自己的图片字典
 //     DBoW3::Vocabulary vocab("./vocab_larger.yml.gz");  // use large vocab if you want: 
     if ( vocab.empty() )
     {
@@ -76,8 +75,8 @@ int main( int argc, char** argv )
     cout<<"reading images... "<<endl;
     vector<Mat> images; 
     RNG rng((unsigned)time(NULL));
-    string testdir="/home/aaron/slambook/slambook-master/picmatch/google/";
-    for ( int i=0; i<60; i++ )
+    string testdir="/home/aaron/slambook/slambook-master/iphone8/splitvideo/build/clear/test/";
+    for ( int i=0; i<3363; i++ )
     {
         string path = testdir+to_string(i)+".jpg";
 // 	imshow("dsd",imread(path));
@@ -88,8 +87,8 @@ int main( int argc, char** argv )
     }
     
     vector<Mat> trainimages;     
-    string traindir="/home/aaron/slambook/slambook-master/picmatch/alldata/";
-    for ( int i=0; i<440; i++ )
+    string traindir="/home/aaron/slambook/slambook-master/iphone8/splitvideo/build/clear/train/";
+    for ( int i=0; i<1682; i++ )
     {
         string path = traindir+to_string(i)+".jpg";
 // 	imshow("dsd",imread(path));
@@ -182,11 +181,11 @@ int main( int argc, char** argv )
         DBoW3::QueryResults ret;
         db.query( descriptors[i], ret, 3);      // max result=4
 //         cout<<"searching for image "<<i<<" returns "<<ret<<endl<<endl;
-	if(ret[0].Score<0.035)
-	{
-	  out<<i<<","<<0<<","<<0<<","<<0<<","<<0<<","<<"该张照片得分过低,库中没有有效的照片"<<endl;
-	  continue;
-	}
+// 	if(ret[0].Score<0.035)
+// 	{
+// 	  out<<i<<","<<0<<","<<0<<","<<0<<","<<0<<","<<"该张照片得分过低,库中没有有效的照片"<<endl;
+// 	  continue;
+// 	}
 	double firstScore=0;
 	double firstInlineCount=1e-2;
 	double firstConsistency=1e-2;
@@ -443,7 +442,10 @@ int main( int argc, char** argv )
 	double pro2=sigmoidFun(InlinerCount,0.15,40);
 	double pro3=sigmoidFun(consistency_ratio,20,0.7);
 	lastResult=(pro1+pro2+pro3)/3.0f;
-	imshow("Score="+to_string(res.Score)+"/"+to_string(pro1)+"InlinerCount="+to_string(InlinerCount)+"/"+to_string(pro2)+"consistency="+to_string(consistency_ratio)+"/"+to_string(pro3)+"pro"+to_string(lastResult), img_correctMatches);
+	string tofile="./result/Score="+to_string(res.Score)+"-"+to_string(pro1)+"InlinerCount="+to_string(InlinerCount)+"-"+to_string(pro2)+"consistency="+to_string(consistency_ratio)+"-"+to_string(pro3)+"pro"+to_string(lastResult)+".jpg";
+// 	cout<<tofile<<endl;
+	imwrite(tofile,img_correctMatches);
+// 	imshow("Score="+to_string(res.Score)+"/"+to_string(pro1)+"InlinerCount="+to_string(InlinerCount)+"/"+to_string(pro2)+"consistency="+to_string(consistency_ratio)+"/"+to_string(pro3)+"pro"+to_string(lastResult), img_correctMatches);
 // 	waitKey(0);
 	}
 	out<<i<<","<<res.Id<<","<<res.Score<<","<<InlinerCount<<","<<consistency_ratio<<endl;
@@ -457,8 +459,8 @@ int main( int argc, char** argv )
 // 	imshow("dst", dst);
        
 	}
- 	cv::waitKey(0);
- 	cv::destroyAllWindows();
+//  	cv::waitKey(0);
+//  	cv::destroyAllWindows();
     }
     out.close();
     cout<<"done."<<endl;
