@@ -5,7 +5,7 @@ matching for the pictures with a enviromental dataset,#ORB,DBOW,Tree of Words#,d
 ## 3. find the most biggest N scores 
 ## 4. calculate the effective numbers of match for every pairs of matches using VFC
 ## 5. get the most likely result
-
+![近似匹配效果](https://github.com/AAAAaron/picMatch/blob/master/cc.jpg)
 # 商标牌的寻找
 ## 1.先找到包含商标牌的近似区域
 ![例子１](https://github.com/AAAAaron/picMatch/blob/master/result.png)
