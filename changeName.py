@@ -19,22 +19,27 @@ def find_file(filedir):
             find_file(curname)
 
 # filedir='/home/aaron/slambook/slambook-master/picmatch/alldata'
-filedir ='/home/aaron/slambook/slambook-master/iphone8/splitvideo/build/clear/'
+filedir ='/aaron/slambook/slambook-master/picmatch/test/alltest'
+
 filename_list=[]
 find_file(filedir)
-traindir=os.path.join(filedir,'train')
-testdir=os.path.join(filedir,'test')
-isExists=os.path.exists(traindir)
-if not isExists:
-    os.mkdir(traindir)
-    os.mkdir(testdir)
-testcount=0
 for index,item in enumerate(filename_list):
     filename=item.split("/")[-1]
-    # filename=filename.split('.')[0]
-    filename = filename[:-4]
-    if index%3==0:
-    	os.rename(item,os.path.join(traindir,str(index/3)+'.jpg'))
-    else:
-        os.rename(item,os.path.join(testdir,str(testcount)+'.jpg'))
-        testcount=testcount+1
+    os.rename(item,os.path.join(filedir,str(index+442)+'.jpg'))
+
+# traindir=os.path.join(filedir,'train')
+# testdir=os.path.join(filedir,'test')
+# isExists=os.path.exists(traindir)
+# if not isExists:
+#     os.mkdir(traindir)
+#     os.mkdir(testdir)
+# testcount=0
+# for index,item in enumerate(filename_list):
+#     filename=item.split("/")[-1]
+#     # filename=filename.split('.')[0]
+#     filename = filename[:-4]
+#     if index%3==0:
+#     	os.rename(item,os.path.join(traindir,str(index/3)+'.jpg'))
+#     else:
+#         os.rename(item,os.path.join(testdir,str(testcount)+'.jpg'))
+#         testcount=testcount+1

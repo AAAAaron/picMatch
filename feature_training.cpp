@@ -22,8 +22,9 @@ int main( int argc, char** argv )
     vector<Mat> images; 
     for ( int i=0; i<441; i++ )
     {
-//         string path = "/home/aaron/slambook/slambook-master/picmatch/alldata/"+to_string(i)+".jpg";
-	string path ="/home/aaron/slambook/slambook-master/iphone8/splitvideo/build/clear/train/"+to_string(i)+".jpg";
+        string path = "/aaron/slambook/slambook-master/picmatch/alldata/"+to_string(i)+".jpg";
+        
+	// string path ="/home/aaron/slambook/slambook-master/iphone8/splitvideo/build/clear/train/"+to_string(i)+".jpg";
         images.push_back( imread(path) );
 	cout<<"now read img "<<path<<endl;
     }
@@ -47,7 +48,8 @@ int main( int argc, char** argv )
     DBoW3::Vocabulary vocab;
     vocab.create( descriptors );
     cout<<"vocabulary info: "<<vocab<<endl;
-    vocab.save( "./vocabularyRetail.yml.gz" );
+    // vocab.save( "./vocabularyRetail.yml.gz" );
+    vocab.save( "./vocabulary1.yml.gz" );
     cout<<"detect orb features spend "<<tr.toc()<<"ms"<<endl;
     cout<<"done"<<endl;
     
